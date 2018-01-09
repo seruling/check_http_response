@@ -1,7 +1,9 @@
 #!/bin/bash
 HTTP="http://"
 TIMEOUT=2
-while getopts f:p:sa:m:t:h option
+CURLOPT=""
+POSTDATA=""
+while getopts f:p:sa:m:t:hd:c: option
 do
  case "${option}"
  in
@@ -11,6 +13,8 @@ do
  a) SUFFIX=$OPTARG;;
  m) MATCH=$OPTARG;;
  t) TIMEOUT=$OPTARG;;
+ d) POSTDATA=$OPTARG;;
+ c) CURLOPT=$OPTARG;;
  h) HELP=true;;
  esac
 done
@@ -23,6 +27,8 @@ if [ "$HELP" = true ] ; then
     echo '-p Port number'
     echo '-h This help'
     echo '-s Enable https switch. Default http'
+    echo '-d POST Data'
+    echo 'Example usage: ./request_check.sh -f list.txt -m "logged-in" -a "/login.aspx" -p 8080 -d "u=username&p=pass123"'
     exit 1
 fi
 
@@ -47,12 +53,18 @@ else
 	PORT=":${PORT}"
 fi
 
+if [ $POSTDATA = "" ]; then
+   :
+else
+  POSTDATA="--data ${POSTDATA}"
+fi
+
 for i in $(cat $FILE)
 do
 	#sed -i 's/\r//
 	i=$(echo "$i" | tr -d '\r')
 	URL="$HTTP$i$PORT$SUFFIX"
-	curl $URL -k -s -m$TIMEOUT | grep "$MATCH"
+	curl $URL $POSTDATA $CURLOPT -k -s -m$TIMEOUT | grep "$MATCH"
 	RESULT=$?
 	if [ $RESULT -eq 0 ]; then
 	echo -e "\e[92m[*] Matched: $URL\e[0m"
